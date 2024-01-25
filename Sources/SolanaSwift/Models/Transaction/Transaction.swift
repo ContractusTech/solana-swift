@@ -186,10 +186,11 @@ public struct Transaction: Encodable, Equatable {
         }
 
         // sort accountMetas, first by signer, then by writable
+        let locale = Locale(identifier: "en_US")
         accountMetas.sort { x, y -> Bool in
             if x.isSigner != y.isSigner { return x.isSigner }
             if x.isWritable != y.isWritable { return x.isWritable }
-            return false
+            return x.publicKey.base58EncodedString.compare(y.publicKey.base58EncodedString, locale: locale) == .orderedAscending
         }
 
         // filterOut duplicate account metas, keeps writable one
@@ -239,6 +240,12 @@ public struct Transaction: Encodable, Equatable {
         //    AccountMeta(publicKey: feePayer, isSigner: true, isWritable: true),
         //    at: 0
         // )
+
+        accountMetas.removeAll(where: { $0.publicKey == feePayer })
+            accountMetas.insert(
+                Account.Meta(publicKey: feePayer, isSigner: true, isWritable: true),
+                at: 0
+        )
 
         // verify signers
         for signature in signatures {
